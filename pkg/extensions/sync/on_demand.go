@@ -122,7 +122,7 @@ func (onDemand *BaseOnDemand) syncImage(ctx context.Context, repo, reference str
 			err = service.SyncImage(ctx, repo, reference)
 		}
 
-		if err != nil || isPingErr {
+		if (err != nil || isPingErr) && !errors.Is(err, zerr.ErrPullByNonOCIDigest) {
 			if errors.Is(err, zerr.ErrManifestNotFound) ||
 				errors.Is(err, zerr.ErrSyncImageFilteredOut) ||
 				errors.Is(err, zerr.ErrSyncImageNotSigned) {

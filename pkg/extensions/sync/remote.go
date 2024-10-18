@@ -117,6 +117,24 @@ func (registry *RemoteRegistry) GetImageReference(repo, reference string) (types
 	return imageRef, nil
 }
 
+func (registry *RemoteRegistry) GetSrcManifestContent(imageReference types.ImageReference) (
+	[]byte, string, digest.Digest, error,
+) {
+	imageSource, err := imageReference.NewImageSource(context.Background(), registry.GetContext())
+	if err != nil {
+		return []byte{}, "", "", err
+	}
+
+	defer imageSource.Close()
+
+	manifestBuf, mediaType, err := imageSource.GetManifest(context.Background(), nil)
+	if err != nil {
+		return []byte{}, "", "", err
+	}
+
+	return manifestBuf, mediaType, digest.FromBytes(manifestBuf), nil
+}
+
 func (registry *RemoteRegistry) GetManifestContent(imageReference types.ImageReference) (
 	[]byte, string, digest.Digest, error,
 ) {

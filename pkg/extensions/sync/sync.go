@@ -65,6 +65,8 @@ type Remote interface {
 	GetRepoTags(repo string) ([]string, error)
 	// Get manifest content, mediaType, digest given an ImageReference
 	GetManifestContent(imageReference types.ImageReference) ([]byte, string, digest.Digest, error)
+	// Get manifest from remote without convert to OCI
+	GetSrcManifestContent(imageReference types.ImageReference) ([]byte, string, digest.Digest, error)
 	// In the case of public dockerhub images 'library' namespace is added to the repo names of images
 	// eg: alpine -> library/alpine
 	GetDockerRemoteRepo(repo string) string

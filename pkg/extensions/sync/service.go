@@ -453,6 +453,34 @@ func (service *BaseService) syncTag(ctx context.Context, destinationRepo, remote
 	}
 
 	if !skipImage {
+		_, err = digest.Parse(tag)
+		if err == nil {
+			if tag != manifestDigest.String() {
+				// its a digest pull. we add details to err and let upper level handling this
+				buf, mt, md, err := service.remote.GetSrcManifestContent(remoteImageRef)
+				if err != nil {
+					service.log.Error().Err(err).Str("errortype", common.TypeOf(err)).
+						Str("remote", remoteImageRef.DockerReference().String()).
+						Str("reference", tag).
+						Msg("get manifest info from remote error")
+					return "", err
+				}
+
+				if md.String() != tag {
+					return "", zerr.NewError(zerr.ErrManifestNotFound)
+				}
+
+				return manifestDigest, zerr.NewError(zerr.ErrPullByNonOCIDigest).AddDetail(
+					"srcDigest", tag,
+				).AddDetail(
+					"srcMediaType", mt,
+				).AddDetail(
+					"srcManifest", string(buf),
+				).AddDetail(
+					"srcRepo", remoteRepo,
+				)
+			}
+		}
 		localImageRef, err := service.destination.GetImageReference(destinationRepo, tag)
 		if err != nil {
 			service.log.Error().Err(err).Str("errortype", common.TypeOf(err)).

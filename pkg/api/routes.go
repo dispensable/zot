@@ -2023,6 +2023,15 @@ func getImageManifest(ctx context.Context, routeHandler *RouteHandler, imgStore 
 			Msg("trying to get updated image by syncing on demand")
 
 		if errSync := routeHandler.c.SyncOnDemand.SyncImage(ctx, name, reference); errSync != nil {
+			if errors.Is(errSync, zerr.ErrPullByNonOCIDigest) {
+				routeHandler.c.Log.Err(errSync).Str("repository", name).Str("reference", reference).
+					Msg("sync failed cause image is not OCI image, return data directly from remote")
+				details := zerr.GetDetails(errSync)
+				d, err := godigest.Parse(details["srcDigest"])
+				if err == nil {
+					return []byte(details["srcManifest"]), d, details["srcMediaType"], err
+				}
+			}
 			routeHandler.c.Log.Err(errSync).Str("repository", name).Str("reference", reference).
 				Msg("failed to sync image")
 		}
