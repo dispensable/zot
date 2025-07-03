@@ -82,6 +82,19 @@ It also gc referrers with missing subject if the Referrer Option is enabled
 It also gc untagged manifests.
 */
 func (gc GarbageCollect) CleanRepo(ctx context.Context, repo string) error {
+	loc, _ := time.LoadLocation("Asia/Shanghai") // UTC+8
+	now := time.Now().In(loc)
+	hour := now.Hour()
+
+	if hour < 3 || hour >= 5 {
+		gc.log.Info().Str("module", "gc").
+			Msg("gc is limited run at 3am - 5am, skip run ...")
+		return nil
+	} else {
+		gc.log.Info().Str("module", "gc").
+			Msg("gc time slots free, go go go ...")
+	}
+
 	gc.log.Info().Str("module", "gc").
 		Msg("executing gc of orphaned blobs for " + path.Join(gc.imgStore.RootDir(), repo))
 

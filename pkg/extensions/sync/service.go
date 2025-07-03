@@ -466,6 +466,7 @@ func (service *BaseService) syncRef(ctx context.Context, localRepo string, remot
 	if recursive {
 		copyOpts = append(copyOpts, regclient.ImageWithReferrers())
 	}
+	copyOpts = append(copyOpts, regclient.ImageWithPlatforms([]string{"linux/amd64"}))
 
 	// check if image is already synced
 	skipImage, err = service.destination.CanSkipImage(localRepo, reference, remoteDigest)

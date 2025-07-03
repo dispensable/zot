@@ -228,6 +228,13 @@ func (registry *DestinationRegistry) copyManifest(repo string, desc ispec.Descri
 		}
 
 		for _, manifest := range indexManifest.Manifests {
+			if manifest.Platform.OS != "linux" || manifest.Platform.Architecture != "amd64" {
+				registry.log.Info().Str("os", manifest.Platform.OS).
+					Str("arch", manifest.Platform.Architecture).
+					Msg("skip image arch as config")
+				continue
+			}
+
 			reference := GetDescriptorReference(manifest)
 
 			manifestBuf, err := tempImageStore.GetBlobContent(repo, manifest.Digest)

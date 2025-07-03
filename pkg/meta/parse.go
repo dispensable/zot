@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"time"
+	"os"
 
 	godigest "github.com/opencontainers/go-digest"
 	ispec "github.com/opencontainers/image-spec/specs-go/v1"
@@ -50,6 +51,12 @@ func ParseStorage(metaDB mTypes.MetaDB, storeController stypes.StoreController, 
 
 			return err
 		}
+	}
+
+	fastStart, exists := os.LookupEnv("ZOT_DOUBAN_FAST_START")
+	if exists && fastStart == "YES" {
+		log.Info().Msg("fast start enabled env(ZOT_DOUBAN_FAST_START=YES), DO NOT CHECK AND LET'S ROLL ...")
+		return nil
 	}
 
 	for i, repo := range allStorageRepos {

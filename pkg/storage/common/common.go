@@ -145,6 +145,12 @@ func ValidateManifest(imgStore storageTypes.ImageStore, repo, reference, mediaTy
 		}
 
 		for _, manifest := range indexManifest.Manifests {
+			if manifest.Platform.OS != "linux" || manifest.Platform.Architecture != "amd64" {
+				log.Info().Str("os", manifest.Platform.OS).
+					Str("arch", manifest.Platform.Architecture).
+					Msg("skip image arch stat blob")
+				continue
+			}
 			if ok, _, _, err := imgStore.StatBlob(repo, manifest.Digest); !ok || err != nil {
 				log.Error().Err(err).Str("digest", manifest.Digest.String()).
 					Msg("failed to stat manifest due to missing manifest blob")
