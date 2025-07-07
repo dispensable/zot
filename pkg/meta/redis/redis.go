@@ -2190,7 +2190,15 @@ func (rc *RedisDB) getAllContainedMeta(ctx context.Context, imageIndexData *prot
 
 		imageManifestData, err := rc.getProtoImageMeta(ctx, manifest.Digest)
 		if err != nil {
-			return imageMetaList, manifestDataList, err
+			rc.Log.Warn().
+				Str("digest", manifest.Digest).Str("proto_image_meta_get_err", err.Error()).
+				Msg("get digest img meta failed, maby be not arch douban hack pulled")
+			// TODO: douban hack
+			// Ignore other arch manifest
+			// 这个函数现在看起来只有web在用，忽略这里应该是安全的
+			// 等官方的arch选择sync支持上了我们再改回来也没事
+			continue
+			// return imageMetaList, manifestDataList, err
 		}
 
 		if imageManifestData.MediaType == ispec.MediaTypeImageManifest ||

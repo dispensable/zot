@@ -500,7 +500,11 @@ func getAllContainedMeta(imageBuck *bbolt.Bucket, imageIndexData *proto_go.Image
 
 		imageManifestData, err := getProtoImageMeta(imageBuck, manifest.Digest)
 		if err != nil {
-			return imageMetaList, manifestDataList, err
+			// return imageMetaList, manifestDataList, err
+			// TODO: remove me when partial sync arch support merged
+			// douban hack for web ui
+			fmt.Printf("{error get digest info: %s, err: %s\n\n", manifest.Digest, err)
+			continue
 		}
 
 		if imageManifestData.MediaType == ispec.MediaTypeImageManifest ||
