@@ -172,7 +172,9 @@ func ValidateManifest(imgStore storageTypes.ImageStore, repo, reference, mediaTy
 				log.Error().Err(err).Str("digest", desc.Digest.String()).
 					Msg("failed to stat non-OCI descriptor due to missing blob")
 
-				return zerr.ErrBadManifest
+				if desc.Platform.OS == "linux" && desc.Platform.Architecture == "amd64" {
+					return zerr.ErrBadManifest
+				}
 			}
 		}
 	}
