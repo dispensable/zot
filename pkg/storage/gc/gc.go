@@ -86,9 +86,11 @@ func (gc GarbageCollect) CleanRepo(ctx context.Context, repo string) error {
 	now := time.Now().In(loc)
 	hour := now.Hour()
 
-	if hour < 3 || hour >= 5 {
-		gc.log.Info().Str("module", "gc").
-			Msg("gc is limited run at 3am - 5am, skip run ...")
+	// douban-hack
+	// only sunday and hour between 2 - 5 allow gc
+	if int(now.Weekday()) != 0 || hour < 2 || hour > 5 {
+		gc.log.Debug().Str("module", "gc").
+			Msg("gc is limited run at 2am - 5am, skip run ...")
 		return nil
 	} else {
 		gc.log.Info().Str("module", "gc").
