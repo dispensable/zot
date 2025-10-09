@@ -49,17 +49,17 @@ type AuthnMiddleware struct {
 	log        log.Logger
 }
 
-func AuthHandler(ctlr *Controller) mux.MiddlewareFunc {
+func AuthHandler(ctlr *Controller) []mux.MiddlewareFunc {
 	authnMiddleware := &AuthnMiddleware{
 		htpasswd: ctlr.HTPasswd,
 		log:      ctlr.Log,
 	}
 
 	if ctlr.Config.IsBearerAuthEnabled() {
-		return bearerAuthHandler(ctlr)
+		return []mux.MiddlewareFunc{bearerAuthHandler(ctlr), authnMiddleware.tryAuthnHandlers(ctlr)}
 	}
 
-	return authnMiddleware.tryAuthnHandlers(ctlr)
+	return []mux.MiddlewareFunc{authnMiddleware.tryAuthnHandlers(ctlr)}
 }
 
 func (amw *AuthnMiddleware) sessionAuthn(ctlr *Controller, userAc *reqCtx.UserAccessControl,
@@ -339,6 +339,13 @@ func (amw *AuthnMiddleware) tryAuthnHandlers(ctlr *Controller) mux.MiddlewareFun
 				return
 			}
 
+			authnMwCtx, err := reqCtx.GetAuthnMiddlewareContext(request.Context())
+			if err != nil || (authnMwCtx != nil && authnMwCtx.AuthnType == BEARER) {
+				next.ServeHTTP(response, request)
+
+				return
+			}
+
 			isMgmtRequested := request.RequestURI == constants.FullMgmt
 			allowAnonymous := ctlr.Config.HTTP.AccessControl.AnonymousPolicyExists()
 
@@ -440,6 +447,11 @@ func bearerAuthHandler(ctlr *Controller) mux.MiddlewareFunc {
 
 			var requestedAccess *ResourceAction
 
+			if strings.HasPrefix(request.RequestURI, "/v2/_zot/ext/") {
+				next.ServeHTTP(response, request)
+				return
+			}
+
 			if request.RequestURI != "/v2/" {
 				// if this is not the base route, the requested repository/action must be authorized
 				vars := mux.Vars(request)
@@ -469,9 +481,10 @@ func bearerAuthHandler(ctlr *Controller) mux.MiddlewareFunc {
 					return
 				}
 
-				ctlr.Log.Error().Err(err).Msg("failed to parse Authorization header")
-				response.Header().Set("Content-Type", "application/json")
-				zcommon.WriteJSON(response, http.StatusUnauthorized, apiErr.NewError(apiErr.UNSUPPORTED))
+				// ctlr.Log.Error().Err(err).Msg("failed to parse Authorization header")
+				// response.Header().Set("Content-Type", "application/json")
+				// zcommon.WriteJSON(response, http.StatusUnauthorized, apiErr.NewError(apiErr.UNSUPPORTED))
+				next.ServeHTTP(response, request)
 
 				return
 			}

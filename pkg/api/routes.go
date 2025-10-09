@@ -66,7 +66,7 @@ func NewRouteHandler(c *Controller) *RouteHandler {
 
 func (rh *RouteHandler) SetupRoutes() {
 	// first get Auth middleware in order to first setup openid/ldap/htpasswd, before oidc provider routes are setup
-	authHandler := AuthHandler(rh.c)
+	authHandlerList := AuthHandler(rh.c)
 
 	applyCORSHeaders := getCORSHeadersHandler(rh.c.Config.HTTP.AllowOrigin)
 
@@ -89,7 +89,9 @@ func (rh *RouteHandler) SetupRoutes() {
 	if rh.c.Config.IsAPIKeyEnabled() {
 		// enable api key management urls
 		apiKeyRouter := rh.c.Router.PathPrefix(constants.APIKeyPath).Subrouter()
-		apiKeyRouter.Use(authHandler)
+		for _, authHandler := range authHandlerList {
+			apiKeyRouter.Use(authHandler)
+		}
 		apiKeyRouter.Use(BaseAuthzHandler(rh.c))
 
 		// Always use CORSHeadersMiddleware before ACHeadersMiddleware
@@ -112,7 +114,9 @@ func (rh *RouteHandler) SetupRoutes() {
 	}
 
 	prefixedRouter := rh.c.Router.PathPrefix(constants.RoutePrefix).Subrouter()
-	prefixedRouter.Use(authHandler)
+	for _, authHandler := range authHandlerList {
+		prefixedRouter.Use(authHandler)
+	}
 
 	prefixedDistSpecRouter := prefixedRouter.NewRoute().Subrouter()
 	// authz is being enabled if AccessControl is specified
@@ -199,6 +203,7 @@ func (rh *RouteHandler) SetupRoutes() {
 				applyCORSHeaders(rh.CheckVersionSupport))).Methods(http.MethodGet, http.MethodOptions)
 	}
 
+	authHandler := authHandlerList[len(authHandlerList)-1]
 	// swagger
 	debug.SetupSwaggerRoutes(rh.c.Config, rh.c.Router, authHandler, rh.c.Log)
 	// gql playground
