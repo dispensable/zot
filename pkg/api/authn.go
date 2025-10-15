@@ -481,7 +481,20 @@ func bearerAuthHandler(ctlr *Controller) mux.MiddlewareFunc {
 					return
 				}
 
-				// ctlr.Log.Error().Err(err).Msg("failed to parse Authorization header")
+				if errors.Is(err, zerr.ErrInvalidBearerToken) {
+					// ref https://datatracker.ietf.org/doc/html/rfc6750#section-3.1
+					h := fmt.Sprintf(
+						"Bearer realm=\"%s\",service=\"%s\",error=\"invalid_token\"",
+						authorizer.realm, authorizer.service,
+					)
+					ctlr.Log.Debug().Err(err).Msg("invalid bearer token")
+					response.Header().Set("Content-Type", "application/json")
+					response.Header().Set("WWW-Authenticate", h)
+					zcommon.WriteJSON(response, http.StatusUnauthorized, apiErr.NewError(apiErr.UNAUTHORIZED))
+					return
+				}
+
+				ctlr.Log.Error().Err(err).Msg("failed to parse Authorization header, jump to next auth method")
 				// response.Header().Set("Content-Type", "application/json")
 				// zcommon.WriteJSON(response, http.StatusUnauthorized, apiErr.NewError(apiErr.UNSUPPORTED))
 				next.ServeHTTP(response, request)
