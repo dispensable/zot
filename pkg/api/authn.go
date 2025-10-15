@@ -447,7 +447,8 @@ func bearerAuthHandler(ctlr *Controller) mux.MiddlewareFunc {
 
 			var requestedAccess *ResourceAction
 
-			if strings.HasPrefix(request.RequestURI, "/v2/_zot/ext/") {
+			if isBasicAuthorizationHeader(request) ||
+				strings.HasPrefix(request.RequestURI, "/v2/_zot/ext/") {
 				next.ServeHTTP(response, request)
 				return
 			}
@@ -717,6 +718,11 @@ func isAuthorizationHeaderEmpty(request *http.Request) bool {
 	}
 
 	return false
+}
+
+func isBasicAuthorizationHeader(request *http.Request) bool {
+	header := request.Header.Get("Authorization")
+	return strings.HasPrefix(strings.ToLower(header), "basic ")
 }
 
 func hasSessionHeader(request *http.Request) bool {
